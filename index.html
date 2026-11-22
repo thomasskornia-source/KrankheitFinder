@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anamnese-Fragebogen Pudendusneuralgie</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--mute:#6b6b70;--line:#e3e1dc;--acc:#2f6f5e;--accl:#e3efe9}
+@media (prefers-color-scheme:dark){:root{--bg:#18191b;--card:#232427;--ink:#ececec;--mute:#9a9aa0;--line:#35363a;--acc:#5fb39a;--accl:#22352f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 14px 60px}
+h1{font-size:1.45rem;margin:4px 0 4px}
+.sub{color:var(--mute);font-size:.92rem;margin:0 0 6px}
+.note{background:var(--accl);border-radius:10px;padding:10px 12px;font-size:.88rem;margin:12px 0 18px}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.progt{font-size:.82rem;color:var(--mute);margin-bottom:14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.q{font-weight:600;margin:0 0 10px;font-size:1rem}
+.q small{font-weight:400;color:var(--mute)}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.opts label{position:relative;cursor:pointer}
+.opts input{position:absolute;opacity:0;pointer-events:none}
+.opts span{display:inline-block;white-space:nowrap;padding:8px 13px;border:1px solid var(--line);border-radius:999px;font-size:.92rem;background:var(--bg);user-select:none}
+.opts input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}
+.opts input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+.num span{min-width:40px;text-align:center;padding:8px 0}
+input.extra,textarea{width:100%;height:42px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+textarea{height:120px;resize:vertical}
+input.extra:focus,textarea:focus{outline:2px solid var(--acc);border-color:transparent}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+button{font:inherit;font-size:.95rem;padding:10px 16px;border-radius:10px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;white-space:nowrap}
+button.ghost{background:transparent;color:var(--acc)}
+#out{display:none;margin-top:12px}
+#out pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.88rem;margin:0 0 8px}
+#msg{font-size:.85rem;color:var(--acc);min-height:1.2em}
+</style>
+</head>
+<body>
+<main>
+<h1>Anamnese-Fragebogen</h1>
+<p class="sub">Vorab-Klärung Pudendusneuralgie · Antippen genügt, Ergänzungen optional</p>
+<div class="note">Kein Ersatz für ärztliche Beratung. Die Angaben bleiben auf diesem Gerät – nichts wird automatisch verschickt. Bitte keine Namen eintragen.</div>
+<div class="prog"><i id="pbar"></i></div>
+<div class="progt" id="ptext">0 von 0 beantwortet</div>
+<form id="f" autocomplete="off"></form>
+<section>
+  <p class="q">Weitere Informationen <small>(frei)</small></p>
+  <textarea id="frei" placeholder="Alles, was sonst noch wichtig ist …"></textarea>
+</section>
+<div class="bar">
+  <button type="button" id="gen">Zusammenfassung</button>
+  <button type="button" class="ghost" id="reset">Zurücksetzen</button>
+</div>
+<div id="out">
+  <pre id="sum"></pre>
+  <div class="bar">
+    <button type="button" id="copy">Kopieren</button>
+    <button type="button" class="ghost" id="share">Teilen</button>
+  </div>
+  <div id="msg"></div>
+</div>
+</main>
+<script>
+const Q=[
+ {id:"symptome",t:"Zusatzsymptome",m:1,o:["Sitzen schlimmer","Fremdkörpergefühl","Stuhlprobleme","Taubheit","Gehen schlimmer"]},
+ {id:"blase",t:"Blasenproblem",o:["Restharn","Drang/Inkontinenz","Beides","Kein Problem"]},
+ {id:"katheter",t:"Katheter",o:["Keiner","Einmalkatheter","Dauerkatheter","Weiß nicht"]},
+ {id:"hwi",t:"Harnwegsinfekte",o:["Nie","Selten","Häufig"]},
+ {id:"seite",t:"Schmerzseite",o:["Links","Rechts","Beidseitig","Mitte"]},
+ {id:"staerke",t:"Schmerzstärke heute",s:"(0–10)",num:1,o:["0","1","2","3","4","5","6","7","8","9","10"]},
+ {id:"nacht",t:"Schlaf",o:["Schmerz weckt auf","Einschlafprobleme","Durchschlafprobleme","Gut"]},
+ {id:"block",t:"Block Feb. 2026",s:"(erste Stunden)",o:["Kurz besser","Gar nicht","Weiß nicht"]},
+ {id:"ausloeser",t:"Möglicher Auslöser",m:1,o:["Sturz","Operation","Geburten","Rücken","Unbekannt"]},
+ {id:"mrt",t:"MRT vorhanden",m:1,o:["Wirbelsäule","Becken","Keins","Unklar"]},
+ {id:"gaba",t:"Gabapentin pro Tag",o:["< 600 mg","600–1200 mg","1200–2400 mg","> 2400 mg","Weiß nicht"]},
+ {id:"meds",t:"Weitere Medikamente",m:1,o:["Blutdruck","Blutverdünner","Schlafmittel","Antidepressiva","Keine"]},
+ {id:"niere",t:"Nierenwerte",o:["Normal","Eingeschränkt","Unbekannt"]},
+ {id:"termin",t:"Termin Blasenschrittmacher",o:["August 2027","Anderes Datum","Keiner"]},
+ {id:"ziel",t:"Wichtigstes Ziel",m:1,o:["Weniger Schmerz","Weniger Tabletten","Blase besser","Schneller Termin"]}
+];
+const f=document.getElementById("f"),KEY="kf-anamnese-v1";
+f.innerHTML=Q.map((q,i)=>`<section><p class="q">${i+1}. ${q.t} ${q.s?`<small>${q.s}</small>`:""}${q.m?" <small>(mehrere)</small>":""}</p>
+<div class="opts${q.num?" num":""}">${q.o.map(o=>`<label><input type="${q.m?"checkbox":"radio"}" name="${q.id}" value="${o}"><span>${o}</span></label>`).join("")}</div>
+<input class="extra" name="${q.id}_x" placeholder="Ergänzung …"></section>`).join("");
+
+function data(){const d={};Q.forEach(q=>{d[q.id]=[...f.querySelectorAll(`[name="${q.id}"]:checked`)].map(e=>e.value);d[q.id+"_x"]=f.elements[q.id+"_x"].value});d.frei=document.getElementById("frei").value;return d}
+function prog(){const d=data(),n=Q.filter(q=>d[q.id].length||d[q.id+"_x"].trim()).length;
+ document.getElementById("pbar").style.width=(n/Q.length*100)+"%";document.getElementById("ptext").textContent=`${n} von ${Q.length} beantwortet`}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data()))}catch(e){}prog()}
+function load(){let d;try{d=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}if(!d)return;
+ Q.forEach(q=>{(d[q.id]||[]).forEach(v=>{const e=[...f.querySelectorAll(`[name="${q.id}"]`)].find(x=>x.value===v);if(e)e.checked=true});f.elements[q.id+"_x"].value=d[q.id+"_x"]||""});
+ document.getElementById("frei").value=d.frei||""}
+// Radio: erneutes Antippen hebt Auswahl auf
+f.addEventListener("click",e=>{const r=e.target;if(r.type==="radio"){if(r.dataset.was==="1"){r.checked=false;r.dataset.was="0"}else{f.querySelectorAll(`[name="${r.name}"]`).forEach(x=>x.dataset.was="0");r.dataset.was="1"}save()}});
+f.addEventListener("input",save);document.getElementById("frei").addEventListener("input",save);
+
+function summary(){const d=data();let s="ANAMNESE – Vorab-Klärung Pudendusneuralgie\n"+new Date().toLocaleDateString("de-DE")+"\n\n";
+ Q.forEach((q,i)=>{const a=d[q.id].join(", "),x=d[q.id+"_x"].trim();s+=`${i+1}. ${q.t}: ${a||"–"}${x?" | "+x:""}\n`});
+ if(d.frei.trim())s+="\nWeitere Informationen:\n"+d.frei.trim()+"\n";return s}
+const msg=t=>{document.getElementById("msg").textContent=t};
+document.getElementById("gen").onclick=()=>{document.getElementById("sum").textContent=summary();document.getElementById("out").style.display="block";msg("")};
+document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(summary());msg("Kopiert.")}catch(e){msg("Kopieren nicht möglich – Text markieren und manuell kopieren.")}};
+document.getElementById("share").onclick=async()=>{try{await navigator.share({title:"Anamnese",text:summary()})}catch(e){msg("Teilen hier nicht verfügbar – bitte Kopieren nutzen.")}};
+let armed=false;document.getElementById("reset").onclick=e=>{if(!armed){armed=true;e.target.textContent="Wirklich löschen?";setTimeout(()=>{armed=false;e.target.textContent="Zurücksetzen"},3000);return}
+ f.reset();document.getElementById("frei").value="";try{localStorage.removeItem(KEY)}catch(e){}armed=false;e.target.textContent="Zurücksetzen";document.getElementById("out").style.display="none";prog()};
+load();prog();
+</script>
+</body>
+</html>
