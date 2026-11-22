@@ -57,6 +57,7 @@ button.ghost{background:transparent;color:var(--acc)}
   <pre id="sum"></pre>
   <div class="bar">
     <button type="button" id="copy">Kopieren</button>
+    <button type="button" class="ghost" id="wa">WhatsApp</button>
     <button type="button" class="ghost" id="share">Teilen</button>
   </div>
   <div id="msg"></div>
@@ -103,6 +104,7 @@ const msg=t=>{document.getElementById("msg").textContent=t};
 document.getElementById("gen").onclick=()=>{document.getElementById("sum").textContent=summary();document.getElementById("out").style.display="block";msg("")};
 document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(summary());msg("Kopiert.")}catch(e){msg("Kopieren nicht möglich – Text markieren und manuell kopieren.")}};
 document.getElementById("share").onclick=async()=>{try{await navigator.share({title:"Anamnese",text:summary()})}catch(e){msg("Teilen hier nicht verfügbar – bitte Kopieren nutzen.")}};
+document.getElementById("wa").onclick=()=>{location.href="https://wa.me/?text="+encodeURIComponent(summary())};
 let armed=false;document.getElementById("reset").onclick=e=>{if(!armed){armed=true;e.target.textContent="Wirklich löschen?";setTimeout(()=>{armed=false;e.target.textContent="Zurücksetzen"},3000);return}
  f.reset();document.getElementById("frei").value="";try{localStorage.removeItem(KEY)}catch(e){}armed=false;e.target.textContent="Zurücksetzen";document.getElementById("out").style.display="none";prog()};
 load();prog();
